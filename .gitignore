@@ -1,3 +1,10 @@
+*.class
+*.log
+.bsp/
+.idea/
+project/
+
+
 # Created by https://www.toptal.com/developers/gitignore/api/scala,sbt,intellij
 # Edit at https://www.toptal.com/developers/gitignore?templates=scala,sbt,intellij
 
@@ -110,10 +117,6 @@ fabric.properties
 # https://plugins.jetbrains.com/plugin/12206-codestream
 .idea/codestream.xml
 
-# Azure Toolkit for IntelliJ plugin
-# https://plugins.jetbrains.com/plugin/8053-azure-toolkit-for-intellij
-.idea/**/azureSettings.xml
-
 ### SBT ###
 # Simple Build Tool
 # http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
@@ -127,9 +130,6 @@ project/plugins/project/
 .history
 .cache
 .lib/
-
-### SBT Patch ###
-.bsp/
 
 ### Scala ###
 *.class
