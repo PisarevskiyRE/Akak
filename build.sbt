@@ -23,12 +23,12 @@ libraryDependencies ++= Seq(
   "io.circe"          %% "circe-generic"              % circeVersion,
   "io.circe"          %% "circe-parser"               % circeVersion,
   "de.heikoseeberger" %% "akka-http-circe"            % "1.39.2",
-  "ch.qos.logback"    % "logback-classic"             % "1.2.10"
+  "ch.qos.logback"    % "logback-classic"             % "1.2.10",
 
   //  для тестов
-  //  "com.typesafe.akka" %% "akka-http-testkit"          % akkaHttpVersion % Test,
-  //  "com.typesafe.akka" %% "akka-actor-testkit-typed"   % akkaVersion     % Test,
-  //  "org.scalatest"     %% "scalatest"                  % "3.2.9"         % Test
+  "com.typesafe.akka" %% "akka-http-testkit"          % akkaHttpVersion % Test,
+  "com.typesafe.akka" %% "akka-actor-testkit-typed"   % akkaVersion     % Test,
+  "org.scalatest"     %% "scalatest"                  % "3.2.9"         % Test
 )
 
 
@@ -36,4 +36,10 @@ libraryDependencies ++= Seq(
 docker-compose up -d
 docker ps
 docker exec -it akak-cassandra-1 cqlsh
+
+
+
+select * from akka.messages;
+truncate table akka.messages;
+
 */
