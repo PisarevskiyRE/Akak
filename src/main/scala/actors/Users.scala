@@ -126,7 +126,7 @@ object UsersPlayGround {
 
 
      // users ! CreateUserData("User1", "color","000000",responseHandler)
-      users ! GetUserData("f6c127ee-30e9-4c72-9d35-21ddaf614a6d", responseHandler)
+     // users ! GetUserData("f6c127ee-30e9-4c72-9d35-21ddaf614a6d", responseHandler)
 
 
       Behaviors.empty
