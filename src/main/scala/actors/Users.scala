@@ -9,8 +9,9 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import akka.util.Timeout
 
+import akka.util.Timeout
+import scala.util._
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -48,7 +49,7 @@ object Users {
               .reply(value)(UpdateCmd)
           case None =>
             Effect
-            .reply(replyTo)(UserDataUpdatedResponse(None)) // не найден
+            .reply(replyTo)(UserDataUpdatedResponse(Failure(new RuntimeException("не найден")))) // не найден
         }
       case getCmd @ GetUserData(id, replyTo) =>
         state.users.get(id) match {
@@ -125,7 +126,7 @@ object UsersPlayGround {
       implicit val ec: ExecutionContext = context.executionContext
 
 
-     // users ! CreateUserData("User1", "color","000000",responseHandler)
+      //users ! CreateUserData("User1", "color","000000",responseHandler)
      // users ! GetUserData("f6c127ee-30e9-4c72-9d35-21ddaf614a6d", responseHandler)
 
 

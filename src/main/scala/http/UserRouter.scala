@@ -10,20 +10,54 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.Directives._
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import http.Validation._
 import io.circe.generic.auto._
+
+import scala.util._
+
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import cats.implicits._
+import cats.data.Validated.{Invalid, Valid}
 
-case class UserDataCreationRequest(user: String, filed: String, value: String) {
-  def toCommand(replyTo: ActorRef[Response]): Command = CreateUserData(user, filed, value, replyTo)
+case class UserDataCreationRequest(user: String, field: String, value: String) {
+  def toCommand(replyTo: ActorRef[Response]): Command = CreateUserData(user, field, value, replyTo)
 }
+
+object UserDataCreationRequest {
+  implicit val validator: Validator[UserDataCreationRequest] = new Validator[UserDataCreationRequest] {
+    override def validate(request: UserDataCreationRequest): ValidationResult[UserDataCreationRequest] = {
+      val userValidation = validateRequired(request.user, "user")
+      val filedValidation = validateRequired(request.field, "field")
+      val valueValidation = validateRequired(request.value, "value")
+
+      (userValidation, filedValidation, valueValidation).mapN(UserDataCreationRequest.apply)
+    }
+  }
+}
+
+
 
 case class UserDataUpdateRequest(field: String, value: String) {
   def toCommand(id: String, replyTo: ActorRef[Response]): Command = UpdateUserData(id, field, value, replyTo)
 }
+
+object UserDataUpdateRequest {
+  implicit val validator: Validator[UserDataUpdateRequest] = new Validator[UserDataUpdateRequest] {
+    override def validate(request: UserDataUpdateRequest): ValidationResult[UserDataUpdateRequest] = {
+      val filedValidation = validateRequired(request.field, "field")
+      val valueValidation = validateRequired(request.value, "value")
+
+      (filedValidation, valueValidation).mapN(UserDataUpdateRequest.apply)
+    }
+  }
+}
+
+
 
 
 
@@ -44,9 +78,16 @@ class UserRoutes(users: ActorRef[Command])(implicit system: ActorSystem[_]) {
     users.ask(replyTo => request.toCommand(id, replyTo))
 
 
+  def validateRequest[R: Validator](requets: R)(routeIfValid: Route): Route =
+    validateEntity(requets) match {
+      case Valid(_) =>
+        routeIfValid
+      case Invalid(failures) =>
+        complete(StatusCodes.BadRequest, FailureResponse(failures.toList.map(_.errorMessage).mkString(", ")))
+    }
   /*
     POST /users/
-      Payload: запрос на создание пользователя через JSON
+      Payload: запрос на создание пользователя
       Response:
         201 Создан
         location: /users/uuid
@@ -75,11 +116,14 @@ class UserRoutes(users: ActorRef[Command])(implicit system: ActorSystem[_]) {
           // и отправляем, проверяем ответ и отправляет отвект http
           entity(as[UserDataCreationRequest]) { request =>
 
-            onSuccess(createUserData(request)) {
-              case UserDataCreatedResponse(id) =>
-                respondWithHeader(Location(s"/users/$id")) {
-                  complete(StatusCodes.Created)
+            validateRequest(request) {
+
+              onSuccess(createUserData(request)) {
+                  case UserDataCreatedResponse(id) =>
+                  respondWithHeader(Location(s"/users/$id")) {
+                    complete(StatusCodes.Created)
                 }
+              }
             }
           }
         }
@@ -98,18 +142,21 @@ class UserRoutes(users: ActorRef[Command])(implicit system: ActorSystem[_]) {
           }
         } ~
         put {
-          entity(as[UserDataUpdateRequest]){ request =>
-          /*
+          entity(as[UserDataUpdateRequest]) { request =>
+            /*
           - трансформируем запрос в команду
           - отправляем команду актору
           - смотрим ответ
           */
-            onSuccess(updateUserData(id, request)) {
-              //- отпрвяем ответ по HTTP
-              case UserDataUpdatedResponse(Some(userData)) =>
-              complete(userData)
-              case UserDataUpdatedResponse(None) =>
-              complete(StatusCodes.NotFound, FailureResponse(s"Пользовать $id не найден"))
+            validateRequest(request) {
+
+              onSuccess(updateUserData(id, request)) {
+                //- отпрвяем ответ по HTTP
+                case UserDataUpdatedResponse(Success(userData)) =>
+                  complete(userData)
+                case UserDataUpdatedResponse(Failure(ex)) =>
+                  complete(StatusCodes.BadRequest, FailureResponse(s"${ex.getMessage}"))
+              }
             }
           }
         }

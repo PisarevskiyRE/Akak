@@ -42,4 +42,15 @@ docker exec -it akak-cassandra-1 cqlsh
 select * from akka.messages;
 truncate table akka.messages;
 
+
+
+
+curl --location 'localhost:8080/users' \
+--header 'Content-Type: application/json' \
+--data '{
+    "user": "User2",
+    "field": "color",
+    "value": "101010"
+}'
+
 */

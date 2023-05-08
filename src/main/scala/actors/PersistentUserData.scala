@@ -3,8 +3,11 @@ package actors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+
 import com.fasterxml.jackson.annotation.ObjectIdGenerators.StringIdGenerator
 
+import scala.util.Try
+import scala.util._
 
 //  отказоустойчивость
 //  аудит
@@ -35,7 +38,7 @@ object PersistentUserData {
   sealed trait Response
   object Response {
     case class UserDataCreatedResponse(id: String) extends Response
-    case class UserDataUpdatedResponse(maybeUserData: Option[UserData]) extends Response
+    case class UserDataUpdatedResponse(maybeUserData: Try[UserData]) extends Response
     case class GetUserDataResponse(maybeUserData: Option[UserData]) extends Response
   }
   import Response._
@@ -56,11 +59,11 @@ object PersistentUserData {
         val oldField = state.field
 
         if (field != oldField) // свойтво не найдено
-          Effect.reply(replyTo)(UserDataUpdatedResponse(None))
+          Effect.reply(replyTo)(UserDataUpdatedResponse(Failure(new RuntimeException("свойтво не найдено"))))
         else
           Effect
           .persist(UserDataUpdated(field, value))
-          .thenReply(replyTo)(newState => UserDataUpdatedResponse(Some(newState)))
+          .thenReply(replyTo)(newState => UserDataUpdatedResponse(Success(newState)))
 
       case GetUserData(_, replyTo) =>
         Effect.reply(replyTo)(GetUserDataResponse(Some(state)))
